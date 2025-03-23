@@ -1,0 +1,82 @@
+Laboratorium 3 – Sprawozdanie (NIEOBOWIĄZKOWE)
+
+Temat:
+Zabezpieczenie lokalnego rejestru Docker za pomocą samopodpisanego certyfikatu SSL.
+
+
+Zadanie:
+- Wykorzystać samopodpisany certyfikat do zabezpieczenia rejestru.
+- Zweryfikować, że działa poprawnie.
+- Wysłać i pobrać testowy obraz (Linux Mint).
+
+
+Co zrobiłam krok po kroku:
+
+
+1. Wygenerowałam certyfikat SSL (self-signed)
+Utworzyłam katalog z certyfikatami:
+
+mkdir -p certs
+openssl req -newkey rsa:4096 -nodes -sha256 -keyout certs/domain.key -x509 -days 365 -out certs/domain.crt
+
+Dane wprowadzone:
+
+Country Name (2 letter code) [AU]: PL  
+State or Province Name (full name): Lubelskie  
+Locality Name (eg, city): Lublin  
+Organization Name (eg, company): Politechnika Lubelska  
+Organizational Unit Name (eg, section): WEiI  
+Common Name (e.g. server FQDN): localhost  
+Email Address: testmail@gmail.com  
+
+‼️ Common Name (CN) – wpisałam `localhost`, bo rejestr działa lokalnie.
+
+
+2. Uruchomiłam rejestr z użyciem certyfikatu:
+
+docker run -d -p 5000:5000 --restart=always --name secure-registry \
+-v "$(pwd)"/certs:/certs \
+-e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/domain.crt \
+-e REGISTRY_HTTP_TLS_KEY=/certs/domain.key \
+registry:2
+
+
+3. Dodałam zaufanie do certyfikatu (dla Docker Desktop – Windows)
+
+W pliku:
+"C:\Program Files\Docker\Docker\resources\linux-daemon-options.json"
+
+Zamieniłam:
+
+"insecure-registries": ["host_port_or_cidr|redacted"]
+
+na:
+
+"insecure-registries": ["localhost:5000"]
+
+Zrestartowałam Docker Desktop.
+
+
+4. Przygotowałam obraz do testu (obraz systemu Linux Mint):
+
+docker pull linuxmintd/mint20-amd64
+docker tag linuxmintd/mint20-amd64 localhost:5000/linuxmint
+docker push localhost:5000/linuxmint
+
+
+5. Sprawdziłam, czy obraz Linux Mint trafił do rejestru:
+
+curl --cacert certs/domain.crt https://localhost:5000/v2/_catalog
+
+Odpowiedź (zawartość rejestru):
+
+{"repositories":["linuxmint"]}
+
+
+6. Pobranie i uruchomienie kontenera z Linux Mint:
+
+docker rmi localhost:5000/linuxmint
+docker pull localhost:5000/linuxmint
+docker run -it localhost:5000/linuxmint bash
+
+✅ Terminal systemu Linux Mint działa poprawnie.

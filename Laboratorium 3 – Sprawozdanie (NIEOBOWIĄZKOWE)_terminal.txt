@@ -1,0 +1,79 @@
+linkency@DESKTOP-4B4J9VK:~$ mkdir -p certs
+linkency@DESKTOP-4B4J9VK:~$ openssl req -newkey rsa:4096 -nodes -sha256 -keyout certs/domain.key -x509 -days 365 -out certs/domain.crt
+.......+...+...+..............+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*...+.........+.........+..+.+........+......+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*........+.+..+....+.........+......+......+.........+......+........+....+.....+......+..........+...........+.+..+.....................+.+......+...+..+.............+......+..................+..+......+....+...+...............+...+.....+....+.........+..............+......+......+....+.....+.+........+.+.....+...............+.+.........+..+............+...............+...+.............+.........+............+..............+.......+..+...+......................+..+.+.........+.....+...+..........+......+.........+......+...............+.........+........+.......+........+.......+......+..+....+...........+.............+............+..+.+.....+............+.......+..+...............+........................................+...+.....+.+.....................+........+..........+...........+....+..................+...+.........+..+................+...+............+........+......+...+.+..+..........+.........+.....+.........+....+..+..........+.....................+.....+....+.........+...........+....+............+.....+...+.......+...+.....+...................+.....+......+.+......+..+................+...........+...+.+.....+.+...+.....+.......+...........+...+....+.....+.+......+...........+.......+......+......+...+.....+................+......+...........+.............+..+.........+.+...+......+.........+.....................+......+........+.......+.........+.....+.+..+......+....+........+...+.......+...........................+...+...+...........+...+.......+.........+......+...........+...+.......+.....+...+.......+.................+.+.....+..........+.....+...............+...............................+......+...............+..............+....+...........................+........+......+...+.......+...+...+..+..........+........+...+....+..+.+...+..+.......+..................+..+......+.......+..+...............+............+......+...+.+.....+....+..+............+............+......+....+......+.....+............+...........................+...+...+.......+..+....+..............+.......+..................+.....+......................+...........+.........+.+..+..........+......+.........+........+.......+...........+.+..............+..........+..............+.............+..+..........+...............+..+..........+.........+............+..+.............+...+.....+.+.........+.........+..+.........+......+.+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+...+..+...+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*...+...............+.....+....+.....+....+............+..............+....+...+..+.+..+.......+...+...+.....+......+....+......+.....+...............+.+...+.....+.........+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*....+...+.............+......+......+.................+..........+..+....+............+.................+.+......+.........+..+...+.........+......+...................+...+........+....+..+....+..+.........+.+............+..+......+.......+.....+................+.....+.+...........+.......+...+..+.......+.....+......+...+....+...+.........+...+...........+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-----
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [AU]:PL
+State or Province Name (full name) [Some-State]:Lubelskie
+Locality Name (eg, city) []:Lublin
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:Politechnika Lubelska
+Organizational Unit Name (eg, section) []:WEiI
+Common Name (e.g. server FQDN or YOUR name) []:localhost
+Email Address []:testmail@gmail.com
+linkency@DESKTOP-4B4J9VK:~$ docker run -d -p 5000:5000 --restart=always --name secure-registry \
+-v "$(pwd)"/certs:/certs \
+-e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/domain.crt \
+-e REGISTRY_HTTP_TLS_KEY=/certs/domain.key \
+registry:2
+Unable to find image 'registry:2' locally
+2: Pulling from library/registry
+6d464ea18732: Download complete
+44cf07d57ee4: Download complete
+8e82f80af0de: Download complete
+3493bf46cdec: Download complete
+bbbdd6c6894b: Download complete
+Digest: sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
+Status: Downloaded newer image for registry:2
+daec31d5d6e854ba32643fae5fa62fc1542cb284fe47a10953e605e62ffbf9c3
+linkency@DESKTOP-4B4J9VK:~$ docker pull linuxmintd/mint20-amd64
+Using default tag: latest
+latest: Pulling from linuxmintd/mint20-amd64
+676c7a9220b6: Download complete
+ae097db4705d: Download complete
+64139f8e44bb: Download complete
+ece621436787: Download complete
+9524d142e18a: Download complete
+d9802f032d67: Download complete
+b9c38ca6b05d: Download complete
+37fcba5a2899: Download complete
+0cea93a54d97: Download complete
+980f8692eaa0: Download complete
+3c431e3fadd3: Download complete
+Digest: sha256:45607313a5a758b147b2e8b810e249e88012cf85c4d02eb31e3f836189b76ec8
+Status: Downloaded newer image for linuxmintd/mint20-amd64:latest
+docker.io/linuxmintd/mint20-amd64:latest
+linkency@DESKTOP-4B4J9VK:~$ docker tag linuxmintd/mint20-amd64 localhost:5000/linuxmint
+linkency@DESKTOP-4B4J9VK:~$ docker push localhost:5000/linuxmint
+Using default tag: latest
+The push refers to repository [localhost:5000/linuxmint]
+9524d142e18a: Pushed
+ae097db4705d: Pushed
+676c7a9220b6: Pushed
+3c431e3fadd3: Pushed
+37fcba5a2899: Pushed
+0cea93a54d97: Pushed
+b9c38ca6b05d: Pushed
+d9802f032d67: Pushed
+980f8692eaa0: Pushed
+ece621436787: Pushed
+64139f8e44bb: Pushed
+latest: digest: sha256:45607313a5a758b147b2e8b810e249e88012cf85c4d02eb31e3f836189b76ec8 size: 2631
+linkency@DESKTOP-4B4J9VK:~$ curl --cacert certs/domain.crt https://localhost:5000/v2/_catalog
+{"repositories":["linuxmint"]}
+linkency@DESKTOP-4B4J9VK:~$ docker rmi localhost:5000/linuxmint
+Untagged: localhost:5000/linuxmint:latest
+linkency@DESKTOP-4B4J9VK:~$ docker pull localhost:5000/linuxmint
+Using default tag: latest
+latest: Pulling from linuxmint
+Digest: sha256:45607313a5a758b147b2e8b810e249e88012cf85c4d02eb31e3f836189b76ec8
+Status: Downloaded newer image for localhost:5000/linuxmint:latest
+localhost:5000/linuxmint:latest
+linkency@DESKTOP-4B4J9VK:~$ docker run -it localhost:5000/linuxmint bash
+root@54828fbf83fa:/#
