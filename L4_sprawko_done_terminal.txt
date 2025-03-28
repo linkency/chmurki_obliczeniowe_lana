@@ -1,0 +1,156 @@
+linkency@DESKTOP-4B4J9VK:~$ mkdir web_100
+linkency@DESKTOP-4B4J9VK:~$ cd web_100
+linkency@DESKTOP-4B4J9VK:~/web_100$ docker init
+
+Welcome to the Docker Init CLI!
+
+This utility will walk you through creating the following files with sensible defaults for your project:
+  - .dockerignore
+  - Dockerfile
+  - compose.yaml
+  - README.Docker.md
+
+Let's get started!
+
+? What application platform does your project use? PHP with Apache
+? What version of PHP do you want to use? latest
+? Please enter the relative directory (with a leading .) for your app: ./
+? What port do you want to use to access your app? 8080
+
+✔ Created → .dockerignore
+✔ Created → Dockerfile
+✔ Created → compose.yaml
+✔ Created → README.Docker.md
+
+→ Your Docker files are ready!
+  Review your Docker files and tailor them to your application.
+  Consult README.Docker.md for information about using the generated files.
+
+What's next?
+  Start your application by running → docker compose up --build
+  Your application will be available at http://localhost:8080
+linkency@DESKTOP-4B4J9VK:~/web_100$ touch index.html
+linkency@DESKTOP-4B4J9VK:~/web_100$ nano index.html
+linkency@DESKTOP-4B4J9VK:~/web_100$ docker build -t web100-init .
+[+] Building 3.0s (12/12) FINISHED                                                                       docker:default
+ => [internal] load build definition from Dockerfile                                                               0.0s
+ => => transferring dockerfile: 2.48kB                                                                             0.0s
+ => resolve image config for docker-image://docker.io/docker/dockerfile:1                                          1.4s
+ => [auth] docker/dockerfile:pull token for registry-1.docker.io                                                   0.0s
+ => CACHED docker-image://docker.io/docker/dockerfile:1@sha256:4c68376a702446fc3c79af22de146a148bc3367e73c25a5803  0.0s
+ => => resolve docker.io/docker/dockerfile:1@sha256:4c68376a702446fc3c79af22de146a148bc3367e73c25a5803d453b6b3f72  0.0s
+ => [internal] load metadata for docker.io/library/php:apache                                                      0.7s
+ => [auth] library/php:pull token for registry-1.docker.io                                                         0.0s
+ => [internal] load .dockerignore                                                                                  0.0s
+ => => transferring context: 692B                                                                                  0.0s
+ => [1/3] FROM docker.io/library/php:apache@sha256:4e4d213d34087fc762691319c0a6394c5a407d36fe6e2f107d033f8d441d62  0.0s
+ => => resolve docker.io/library/php:apache@sha256:4e4d213d34087fc762691319c0a6394c5a407d36fe6e2f107d033f8d441d62  0.0s
+ => [internal] load build context                                                                                  0.0s
+ => => transferring context: 1.11kB                                                                                0.0s
+ => CACHED [2/3] RUN mv "/usr/local/etc/php/php.ini-production" "/usr/local/etc/php/php.ini"                       0.0s
+ => [3/3] COPY ./ /var/www/html                                                                                    0.1s
+ => exporting to image                                                                                             0.3s
+ => => exporting layers                                                                                            0.1s
+ => => exporting manifest sha256:708495e179a9d01e1e0df659e53eb713dedef592099bc9043c40d32f3ca2b06c                  0.0s
+ => => exporting config sha256:5a972c8a96a4a40655826ffe066df833e1c2d1ffc79a772c8c3a785bfbd2dd13                    0.0s
+ => => exporting attestation manifest sha256:801e4199d216700655ec30d2a90eada1f5362ac6a77f7ba618f7840a025a70b6      0.0s
+ => => exporting manifest list sha256:09833c0617ef10ff99e830a53b51365abd7606e744c4d50fbcaca7c35044b70c             0.0s
+ => => naming to docker.io/library/web100-init:latest                                                              0.0s
+ => => unpacking to docker.io/library/web100-init:latest                                                           0.1s
+linkency@DESKTOP-4B4J9VK:~/web_100$ docker run -d -p 8080:80 --name web100-init web100-init
+34b4d6621d89be1e6b2bb81b97337d165e85db765bd9991368bfc2e5bf0f811b
+linkency@DESKTOP-4B4J9VK:~/web_100$ curl http://localhost:8080
+   <html>
+   <body>
+     <h1>Svitlana Lysiuk</h1>
+     <p>6/10</p>
+   </body>
+   </html>
+linkency@DESKTOP-4B4J9VK:~/web_100$ docker history web100-init
+IMAGE          CREATED         CREATED BY                                      SIZE      COMMENT
+09833c0617ef   9 minutes ago   USER www-data                                   0B        buildkit.dockerfile.v0
+<missing>      9 minutes ago   COPY ./ /var/www/html # buildkit                24.6kB    buildkit.dockerfile.v0
+<missing>      3 days ago      RUN /bin/sh -c mv "$PHP_INI_DIR/php.ini-prod…   90.1kB    buildkit.dockerfile.v0
+<missing>      2 weeks ago     CMD ["apache2-foreground"]                      0B        buildkit.dockerfile.v0
+<missing>      2 weeks ago     EXPOSE map[80/tcp:{}]                           0B        buildkit.dockerfile.v0
+<missing>      2 weeks ago     WORKDIR /var/www/html                           4.1kB     buildkit.dockerfile.v0
+<missing>      2 weeks ago     COPY apache2-foreground /usr/local/bin/ # bu…   20.5kB    buildkit.dockerfile.v0
+<missing>      2 weeks ago     STOPSIGNAL SIGWINCH                             0B        buildkit.dockerfile.v0
+<missing>      2 weeks ago     ENTRYPOINT ["docker-php-entrypoint"]            0B        buildkit.dockerfile.v0
+<missing>      2 weeks ago     RUN /bin/sh -c docker-php-ext-enable sodium …   28.7kB    buildkit.dockerfile.v0
+<missing>      2 weeks ago     COPY docker-php-ext-* docker-php-entrypoint …   32.8kB    buildkit.dockerfile.v0
+<missing>      2 weeks ago     RUN /bin/sh -c set -eux;   savedAptMark="$(a…   61.2MB    buildkit.dockerfile.v0
+<missing>      2 weeks ago     COPY docker-php-source /usr/local/bin/ # bui…   20.5kB    buildkit.dockerfile.v0
+<missing>      2 weeks ago     RUN /bin/sh -c set -eux;   savedAptMark="$(a…   14.2MB    buildkit.dockerfile.v0
+<missing>      2 weeks ago     ENV PHP_SHA256=0d3270bbce4d9ec617befce52458b…   0B        buildkit.dockerfile.v0
+<missing>      2 weeks ago     ENV PHP_URL=https://www.php.net/distribution…   0B        buildkit.dockerfile.v0
+<missing>      2 weeks ago     ENV PHP_VERSION=8.4.5                           0B        buildkit.dockerfile.v0
+<missing>      2 weeks ago     ENV GPG_KEYS=AFD8691FDAEDF03BDF6E460563F15A9…   0B        buildkit.dockerfile.v0
+<missing>      2 weeks ago     ENV PHP_LDFLAGS=-Wl,-O1 -pie                    0B        buildkit.dockerfile.v0
+<missing>      2 weeks ago     ENV PHP_CPPFLAGS=-fstack-protector-strong -f…   0B        buildkit.dockerfile.v0
+<missing>      2 weeks ago     ENV PHP_CFLAGS=-fstack-protector-strong -fpi…   0B        buildkit.dockerfile.v0
+<missing>      2 weeks ago     RUN /bin/sh -c {   echo '<FilesMatch \.php$>…   45.1kB    buildkit.dockerfile.v0
+<missing>      2 weeks ago     RUN /bin/sh -c a2dismod mpm_event && a2enmod…   45.1kB    buildkit.dockerfile.v0
+<missing>      2 weeks ago     RUN /bin/sh -c set -eux;  apt-get update;  a…   52.4MB    buildkit.dockerfile.v0
+<missing>      2 weeks ago     ENV APACHE_ENVVARS=/etc/apache2/envvars         0B        buildkit.dockerfile.v0
+<missing>      2 weeks ago     ENV APACHE_CONFDIR=/etc/apache2                 0B        buildkit.dockerfile.v0
+<missing>      2 weeks ago     RUN /bin/sh -c set -eux;  mkdir -p "$PHP_INI…   36.9kB    buildkit.dockerfile.v0
+<missing>      2 weeks ago     ENV PHP_INI_DIR=/usr/local/etc/php              0B        buildkit.dockerfile.v0
+<missing>      2 weeks ago     RUN /bin/sh -c set -eux;  apt-get update;  a…   331MB     buildkit.dockerfile.v0
+<missing>      2 weeks ago     ENV PHPIZE_DEPS=autoconf   dpkg-dev   file  …   0B        buildkit.dockerfile.v0
+<missing>      2 weeks ago     RUN /bin/sh -c set -eux;  {   echo 'Package:…   20.5kB    buildkit.dockerfile.v0
+<missing>      2 weeks ago     # debian.sh --arch 'amd64' out/ 'bookworm' '…   85.2MB    debuerreotype 0.15
+linkency@DESKTOP-4B4J9VK:~/web_100$ ../
+-bash: ../: Is a directory
+linkency@DESKTOP-4B4J9VK:~/web_100$ cd ..
+linkency@DESKTOP-4B4J9VK:~$ mkdir web_100-opti
+linkency@DESKTOP-4B4J9VK:~$ cd web_100-opti
+linkency@DESKTOP-4B4J9VK:~/web_100-opti$ touch Dockerfile
+linkency@DESKTOP-4B4J9VK:~/web_100-opti$ nano Dockerfile
+linkency@DESKTOP-4B4J9VK:~/web_100-opti$ touch index.html
+linkency@DESKTOP-4B4J9VK:~/web_100-opti$ nano index.html
+linkency@DESKTOP-4B4J9VK:~/web_100-opti$ docker build -t web100 .
+[+] Building 17.6s (9/9) FINISHED                                                                        docker:default
+ => [internal] load build definition from Dockerfile                                                               0.0s
+ => => transferring dockerfile: 715B                                                                               0.0s
+ => [internal] load metadata for docker.io/library/ubuntu:latest                                                  13.9s
+ => [auth] library/ubuntu:pull token for registry-1.docker.io                                                      0.0s
+ => [internal] load .dockerignore                                                                                  0.9s
+ => => transferring context: 2B                                                                                    0.0s
+ => [1/3] FROM docker.io/library/ubuntu:latest@sha256:72297848456d5d37d1262630108ab308d3e9ec7ed1c3286a32fe0985661  0.0s
+ => => resolve docker.io/library/ubuntu:latest@sha256:72297848456d5d37d1262630108ab308d3e9ec7ed1c3286a32fe0985661  0.0s
+ => [internal] load build context                                                                                  0.1s
+ => => transferring context: 126B                                                                                  0.0s
+ => CACHED [2/3] RUN apt-get update && apt-get upgrade -y &&     apt-get install -y apache2 &&     apt-get clean   0.0s
+ => [3/3] COPY index.html /var/www/html/index.html                                                                 0.0s
+ => exporting to image                                                                                             2.5s
+ => => exporting layers                                                                                            0.1s
+ => => exporting manifest sha256:0e130b2b6d4f64b65f411b2c3ed6705575578b278d47d17ae423f3b2e5e1999a                  0.0s
+ => => exporting config sha256:2ae6ed9881b727f70f58bd40c12d919526b7bc6d8de7465181f7393158db1b54                    0.0s
+ => => exporting attestation manifest sha256:11b194677b17092ebb9fd619c442df757b554b99842345e170bf1dd76fdf489c      0.0s
+ => => exporting manifest list sha256:fe30dd94ac948329c95c9f102fa4a720ce5fa19d9c7d26d3cf9a3557f70f39bf             0.0s
+ => => naming to docker.io/library/web100:latest                                                                   0.0s
+ => => unpacking to docker.io/library/web100:latest                                                                2.3s
+linkency@DESKTOP-4B4J9VK:~/web_100-opti$ docker run -d -p 8081:80 --name web100 web100
+699fe73318c3d72eab8300d0c18d68e1d1a3a0fae6990a3e782bed1884688c88
+linkency@DESKTOP-4B4J9VK:~/web_100-opti$ curl http://localhost:8081
+   <html>
+   <body>
+     <h1>Svitlana Lysiuk</h1>
+     <p>6/10</p>
+   </body>
+   </html>
+linkency@DESKTOP-4B4J9VK:~/web_100-opti$ docker history web100
+IMAGE          CREATED         CREATED BY                                      SIZE      COMMENT
+fe30dd94ac94   4 minutes ago   CMD ["apachectl" "-D" "FOREGROUND"]             0B        buildkit.dockerfile.v0
+<missing>      4 minutes ago   EXPOSE map[80/tcp:{}]                           0B        buildkit.dockerfile.v0
+<missing>      4 minutes ago   COPY index.html /var/www/html/index.html # b…   20.5kB    buildkit.dockerfile.v0
+<missing>      6 days ago      RUN /bin/sh -c apt-get update && apt-get upg…   203MB     buildkit.dockerfile.v0
+<missing>      6 days ago      LABEL maintainer=Svitlana Lysiuk <svitlana.l…   0B        buildkit.dockerfile.v0
+<missing>      2 months ago    /bin/sh -c #(nop)  CMD ["/bin/bash"]            0B
+<missing>      2 months ago    /bin/sh -c #(nop) ADD file:6df775300d76441aa…   87.6MB
+<missing>      2 months ago    /bin/sh -c #(nop)  LABEL org.opencontainers.…   0B
+<missing>      2 months ago    /bin/sh -c #(nop)  LABEL org.opencontainers.…   0B
+<missing>      2 months ago    /bin/sh -c #(nop)  ARG LAUNCHPAD_BUILD_ARCH     0B
+<missing>      2 months ago    /bin/sh -c #(nop)  ARG RELEASE                  0B
+linkency@DESKTOP-4B4J9VK:~/web_100-opti$

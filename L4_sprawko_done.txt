@@ -1,0 +1,181 @@
+Laboratorium 4 – Sprawozdanie (NIEOBOWIĄZKOWE)
+Temat:
+Analiza struktury obrazów Docker. Budowanie obrazu z użyciem Dockerfile. Wykorzystanie zmiennych ARG i ENV. Optymalizacja warstw obrazu.
+
+ETAP 1 – Automatyczny plik Dockerfile (`docker init`)
+
+1. W terminalu stworzyłam nowy folder o nazwie `web_100`, w którym miały znajdować się wszystkie pliki potrzebne do budowania obrazu Docker.
+   mkdir web_100
+   cd web_100
+
+2. Użyłam polecenia `docker init` i wybrałam opcje PHP.
+
+Welcome to the Docker Init CLI!
+
+This utility will walk you through creating the following files with sensible defaults for your project:
+  - .dockerignore
+  - Dockerfile
+  - compose.yaml
+  - README.Docker.md
+
+Let's get started!
+
+? What application platform does your project use?  [Use arrows to move, type to filter]
+  Go - suitable for a Go server application
+  Python - suitable for a Python server application
+  Node - suitable for a Node server application
+  Rust - suitable for a Rust server application
+  ASP.NET Core - suitable for an ASP.NET Core application
+> PHP with Apache - suitable for a PHP web application
+  Java - suitable for a Java application that uses Maven and packages as an uber jar
+  Other - general purpose starting point for containerizing your application
+  Don't see something you need? Let us know!
+  Quit
+
+
+wskazałam takie odpowiedzi: 
+
+
+? What application platform does your project use? PHP with Apache
+? What version of PHP do you want to use? latest
+? Please enter the relative directory (with a leading .) for your app: ./
+? What port do you want to use to access your app? 8080
+
+
+
+
+
+3. Utworzyłam plik `index.html` 
+
+touch index.html
+
+z zawartością:
+   <html>
+   <body>
+     <h1>Svitlana Lysiuk</h1>
+     <p>6/20</p>
+   </body>
+   </html>
+
+4. Sprawdziłam, czy obraz można zbudować:
+   docker build -t web100-init .
+
+5. Uruchomiłam kontener:
+   docker run -d -p 8080:80 --name web100-init web100-init
+
+6. Sprawdziłam działanie:
+   curl http://localhost:8080
+   lub przez przeglądarkę: http://localhost:8080
+
+Działa, ponieważ obraz php:apache ma domyślnie uruchomiony serwer Apache, który automatycznie serwuje pliki z katalogu /var/www/html, gdzie został skopiowany index.html.
+
+
+
+poleceniem sprawdziłam liczbę warstw:
+
+docker history web100-init
+
+okazało się że web100-init posiada 30 warstw
+
+
+
+
+
+
+ETAP 2 – Poprawiony Dockerfile (optymalizacja)
+
+1. W terminalu stworzyłam nowy folder o nazwie `web_100-opti`, w którym miały znajdować się wszystkie pliki potrzebne do budowania obrazu Docker.
+
+cd .. # wyszłam z katalogu web_100 do katalogu nadrzędnego   
+
+mkdir web_100-opti
+cd web_100-opti
+
+2. Utworzyłam plik `Dockerfile` 
+
+touch Dockerfile
+
+
+z treścią:
+
+# Dodałam: użycie najnowszego obrazu Ubuntu jako bazowego
+FROM ubuntu:latest
+
+# Dodałam: informację o autorze obrazu (imię, nazwisko, e-mail)
+LABEL maintainer="Svitlana Lysiuk <svitlana.lysiuk@example.com>"
+
+# Dodałam: aktualizację systemu, instalację Apache i czyszczenie niepotrzebnych pakietów
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y apache2 && \
+    apt-get clean
+
+# Dodałam: skopiowanie pliku index.html do katalogu serwera Apache
+COPY index.html /var/www/html/index.html
+
+# Dodałam: informację, że kontener będzie używać portu 80
+EXPOSE 80
+
+# Dodałam: polecenie uruchamiające serwer Apache na pierwszym planie
+CMD ["apachectl", "-D", "FOREGROUND"]
+
+
+
+
+3. Stworzyłam plik `index.html` z taką samą zawartością jak w etapie 1.
+
+touch index.html
+
+z zawartością:
+   <html>
+   <body>
+     <h1>Svitlana Lysiuk</h1>
+     <p>6/20</p>
+   </body>
+   </html>
+
+4. Zbudowałam obraz:
+   docker build -t web100 .
+
+5. Uruchomiłam kontener:
+   docker run -d -p 8081:80 --name web100 web100
+
+6. Sprawdziłam działanie:
+   curl http://localhost:8081
+   lub w przeglądarce: http://localhost:8081
+
+
+poleceniem sprawdziłam liczbę warstw:
+
+docker history web100
+
+okazało się że Obraz z Etapu 2 posiada 11 warstw.
+
+
+Porównanie:
+
+| Element                 | Etap 1 (`docker init`, PHP)           | Etap 2 (manualnie, Ubuntu + Apache)    |
+|-------------------------|---------------------------------------|----------------------------------------|
+| Obraz bazowy           | `php:apache`                          | `ubuntu:latest`                        |
+| Działanie               | ✅ działa                             | ✅ działa                              |
+| Warstwy obrazu         | 3-4 (zależne od rozszerzeń PHP)       | 4-5 (zależne od `apt`)                 |
+| Typ aplikacji          | dynamiczna PHP                        | statyczna strona HTML                  |
+| Elastyczność            | umiarkowana – brak konfiguracji Apache| wysoka – pełna kontrola                |
+
+Serwer w obu wersjach (etap 1 oraz etap 2) został uruchomiony i działał poprawnie. Sprawdziłam to zarówno za pomocą polecenia `curl`, jak i w przeglądarce internetowej – w obu przypadkach strona wyświetlała się poprawnie.
+
+Na podstawie polecenia `docker history` ustaliłam, że:
+- Obraz z etapu 1 (`web100-init`) posiada 30 warstw.
+- Obraz z etapu 2 (`web100`) posiada 11 warstw.
+
+Porównując oba podejścia:
+
+Rozwiązanie z etapu 1, wygenerowane automatycznie przez `docker init`, działa od razu bez dodatkowej konfiguracji, ponieważ obraz `php:apache` ma domyślnie uruchomiony serwer Apache z odpowiednim katalogiem roboczym. Jednak zawiera dużo warstw odziedziczonych z obrazu bazowego i nie daje pełnej kontroli nad środowiskiem.
+
+Rozwiązanie z etapu 2, stworzone samodzielnie, daje pełną kontrolę nad tym, co znajduje się w obrazie. Dzięki zastosowaniu dobrych praktyk obraz jest bardziej zoptymalizowany (mniej warstw, czyszczenie po instalacji, grupowanie poleceń w jednej instrukcji RUN) i łatwiejszy do utrzymania.
+
+Zaimplementowane dobre praktyki:
+- Użycie oficjalnego, lekkiego obrazu bazowego (`ubuntu:latest`).
+- Dodanie etykiety `LABEL maintainer` z informacją o autorze.
+- Grupowanie poleceń `apt-get update`, `upgrade`, `install` i `clean` w jednej instrukcji `RUN`, co zmniejsza liczbę warstw.
+- Usunięcie cache po instalacji (`apt-get clean`) w celu zmniejszenia rozmiaru obrazu.
+- Użycie `CMD` do uruchamiania procesu jako głównego w kontenerze.
