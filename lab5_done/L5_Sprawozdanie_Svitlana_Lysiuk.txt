@@ -1,0 +1,67 @@
+Laboratorium 5 – Sprawozdanie (ZADANIE OBOWIĄZKOWE)
+Temat:
+Budowa obrazu metodą wieloetapowego budowania (multi-stage). Wykorzystanie ARG, HEALTHCHECK i obrazu scratch/alpine.
+
+ETAP 1 – Budowanie aplikacji (stage 1)
+
+1. Stworzyłam katalog roboczy dla projektu:
+   mkdir web_multistage
+   cd web_multistage
+
+2. Stworzyłam plik `app.sh` zawierający kod tworzący plik HTML z danymi:
+   touch app.sh
+
+Zawartość pliku `app.sh`:
+#!/bin/sh
+echo "<html><body>" > /app/index.html
+echo "<h1>IP: $(hostname -i)</h1>" >> /app/index.html
+echo "<h2>HOST: $(hostname)</h2>" >> /app/index.html
+echo "<p>Version: ${VERSION}</p>" >> /app/index.html
+echo "</body></html>" >> /app/index.html
+
+3. Utworzyłam plik `Dockerfile` zawierający definicję wieloetapowego budowania:
+
+ETAP 1 (builder):
+FROM alpine AS builder
+ARG VERSION="1.0.0"
+RUN apk add --no-cache bash
+WORKDIR /app
+COPY app.sh .
+RUN chmod +x app.sh && ./app.sh
+
+
+ETAP 2 – Konfiguracja serwera HTTP (stage 2)
+
+1. Druga część Dockerfile:
+
+FROM nginx:alpine
+COPY --from=builder /app/index.html /usr/share/nginx/html/index.html
+
+# Dodany HEALTHCHECK sprawdzający, czy aplikacja działa
+HEALTHCHECK --interval=30s --timeout=3s CMD wget -q --spider http://localhost || exit 1
+
+2. Zbudowałam obraz Docker z przekazaną wersją:
+   docker build --build-arg VERSION="2.5.1" -t multistage-web .
+
+3. Uruchomiłam kontener:
+   docker run -d -p 8082:80 --name multistage-web multistage-web
+
+4. Sprawdziłam działanie aplikacji za pomocą:
+   curl http://localhost:8082
+   lub w przeglądarce: http://localhost:8082
+
+Aplikacja wyświetliła:
+- IP serwera,
+- hostname,
+- wersję aplikacji: 2.5.1
+
+Dzięki użyciu metody multi-stage build, mój obraz:
+- jest lekki,
+- zawiera tylko finalny wynik działania skryptu,
+- zawiera HEALTHCHECK monitorujący stan aplikacji.
+
+Wykorzystane dobre praktyki:
+- multi-stage build (oddzielenie build-time od runtime),
+- ARG do dynamicznego przekazania wersji aplikacji,
+- użycie lekkich obrazów `alpine` i `nginx:alpine`,
+- HEALTHCHECK do automatycznego monitorowania aplikacji.

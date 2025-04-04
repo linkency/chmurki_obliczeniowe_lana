@@ -42,9 +42,6 @@ wskazałam takie odpowiedzi:
 ? What port do you want to use to access your app? 8080
 
 
-
-
-
 3. Utworzyłam plik `index.html` 
 
 touch index.html
@@ -70,15 +67,11 @@ z zawartością:
 Działa, ponieważ obraz php:apache ma domyślnie uruchomiony serwer Apache, który automatycznie serwuje pliki z katalogu /var/www/html, gdzie został skopiowany index.html.
 
 
-
 poleceniem sprawdziłam liczbę warstw:
 
 docker history web100-init
 
 okazało się że web100-init posiada 30 warstw
-
-
-
 
 
 
@@ -94,7 +87,6 @@ cd web_100-opti
 2. Utworzyłam plik `Dockerfile` 
 
 touch Dockerfile
-
 
 z treścią:
 
@@ -117,7 +109,6 @@ EXPOSE 80
 
 # Dodałam: polecenie uruchamiające serwer Apache na pierwszym planie
 CMD ["apachectl", "-D", "FOREGROUND"]
-
 
 
 
@@ -169,9 +160,11 @@ Na podstawie polecenia `docker history` ustaliłam, że:
 
 Porównując oba podejścia:
 
-Rozwiązanie z etapu 1, wygenerowane automatycznie przez `docker init`, działa od razu bez dodatkowej konfiguracji, ponieważ obraz `php:apache` ma domyślnie uruchomiony serwer Apache z odpowiednim katalogiem roboczym. Jednak zawiera dużo warstw odziedziczonych z obrazu bazowego i nie daje pełnej kontroli nad środowiskiem.
+Rozwiązanie z etapu 1, wygenerowane automatycznie przez `docker init`, działa od razu bez dodatkowej konfiguracji, ponieważ obraz `php:apache` ma domyślnie uruchomiony serwer Apache z odpowiednim katalogiem roboczym. 
+Jednak zawiera dużo warstw odziedziczonych z obrazu bazowego i nie daje pełnej kontroli nad środowiskiem.
 
-Rozwiązanie z etapu 2, stworzone samodzielnie, daje pełną kontrolę nad tym, co znajduje się w obrazie. Dzięki zastosowaniu dobrych praktyk obraz jest bardziej zoptymalizowany (mniej warstw, czyszczenie po instalacji, grupowanie poleceń w jednej instrukcji RUN) i łatwiejszy do utrzymania.
+Rozwiązanie z etapu 2, stworzone samodzielnie, daje pełną kontrolę nad tym, co znajduje się w obrazie. 
+Dzięki zastosowaniu dobrych praktyk obraz jest bardziej zoptymalizowany (mniej warstw, czyszczenie po instalacji, grupowanie poleceń w jednej instrukcji RUN) i łatwiejszy do utrzymania.
 
 Zaimplementowane dobre praktyki:
 - Użycie oficjalnego, lekkiego obrazu bazowego (`ubuntu:latest`).
