@@ -1,67 +1,161 @@
-Laboratorium 5 – Sprawozdanie (ZADANIE OBOWIĄZKOWE)
+Laboratorium 5 – Sprawozdanie(Obowiązkowe)
 Temat:
-Budowa obrazu metodą wieloetapowego budowania (multi-stage). Wykorzystanie ARG, HEALTHCHECK i obrazu scratch/alpine.
+Budowanie obrazów metodą „od podstaw” oraz wieloetapowe budowanie obrazów Docker z wykorzystaniem Go, scratch, Alpine i nginx.
 
-ETAP 1 – Budowanie aplikacji (stage 1)
+ETAP 1 – Kompilacja aplikacji Go i przygotowanie systemu na scratch
 
-1. Stworzyłam katalog roboczy dla projektu:
-   mkdir web_multistage
-   cd web_multistage
+1. Utworzyłam nowy katalog roboczy:
+mkdir go_web_nginx
+cd go_web_nginx
 
-2. Stworzyłam plik `app.sh` zawierający kod tworzący plik HTML z danymi:
-   touch app.sh
+2. Pobrałam system Alpine Linux:
+Wersja: alpine-minirootfs-3.21.3-x86_64.tar.gz
 
-Zawartość pliku `app.sh`:
-#!/bin/sh
-echo "<html><body>" > /app/index.html
-echo "<h1>IP: $(hostname -i)</h1>" >> /app/index.html
-echo "<h2>HOST: $(hostname)</h2>" >> /app/index.html
-echo "<p>Version: ${VERSION}</p>" >> /app/index.html
-echo "</body></html>" >> /app/index.html
+Polecenie pobierające:
+wget https://dl-cdn.alpinelinux.org/alpine/v3.21/releases/x86_64/alpine-minirootfs-3.21.3-x86_64.tar.gz
 
-3. Utworzyłam plik `Dockerfile` zawierający definicję wieloetapowego budowania:
+3. Rozpakowałam plik:
+gunzip alpine-minirootfs-3.21.3-x86_64.tar.gz
 
-ETAP 1 (builder):
-FROM alpine AS builder
-ARG VERSION="1.0.0"
-RUN apk add --no-cache bash
-WORKDIR /app
-COPY app.sh .
-RUN chmod +x app.sh && ./app.sh
+4. Zainstalowałam Go lokalnie:
+wget https://go.dev/dl/go1.22.0.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.22.0.linux-amd64.tar.gz
+echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+source ~/.bashrc
+go version
+
+5. Stworzyłam plik `main.go`:
+
+nano main.go
+
+Kod oparty na:
+- https://adhoc.team/2021/03/29/simple-web-app-in-golang/
+- https://codingyash.medium.com/how-to-get-ip-and-hostname-in-golang-and-java-71352c12cb33
+
+Treść pliku `main.go`:
+
+package main
+
+import (
+    "fmt"
+    "net"
+    "net/http"
+    "os"
+)
+
+var version = "undefined"
+
+func handler(w http.ResponseWriter, r *http.Request) {
+    ip := getOutboundIP()
+    hostname, _ := os.Hostname()
+    fmt.Fprintf(w, "<html><body>")
+    fmt.Fprintf(w, "<h1>IP serwera: %s</h1>", ip)
+    fmt.Fprintf(w, "<h2>Hostname: %s</h2>", hostname)
+    fmt.Fprintf(w, "<h3>Wersja aplikacji: %s</h3>", version)
+    fmt.Fprintf(w, "</body></html>")
+}
+
+func getOutboundIP() string {
+    conn, _ := net.Dial("udp", "8.8.8.8:80")
+    defer conn.Close()
+    localAddr := conn.LocalAddr().(*net.UDPAddr)
+    return localAddr.IP.String()
+}
+
+func main() {
+    http.HandleFunc("/", handler)
+    http.ListenAndServe(":8080", nil)
+}
+
+6. Zbudowałam statyczną binarkę Go:
+
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X main.version=1.0.0" -o app main.go
+
+7. Utworzyłam plik `Dockerfile`:
+
+nano Dockerfile
+
+Treść pliku Dockerfile (dla obrazu scratch):
+
+# etap1
+FROM scratch
+
+# Dodanie systemu plików Alpine
+ADD alpine-minirootfs-3.21.3-x86_64.tar /
+
+# Dodanie binarki aplikacji Go
+COPY app /usr/bin/app
+
+# Uruchomienie aplikacji
+CMD ["/usr/bin/app"]
 
 
-ETAP 2 – Konfiguracja serwera HTTP (stage 2)
+8. Zbudowałam obraz:
+docker build -t go-scratch-alpine .
 
-1. Druga część Dockerfile:
+9. Uruchomiłam kontener:
+docker run -d --name go_app -p 8080:8080 go-scratch-alpine
 
+10. Sprawdziłam działanie:
+curl http://localhost:8080
+
+------------------------------------------------------------
+
+ETAP 2 – Reverse proxy z nginx
+
+1. Utworzyłam plik `default.conf`:
+
+nano default.conf
+
+Treść:
+server {
+    listen 80;
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+    }
+}
+
+2. Zedytowałam Dockerfile (etap 2):
+
+nano Dockerfile
+
+Treść:
+
+#etap2
 FROM nginx:alpine
-COPY --from=builder /app/index.html /usr/share/nginx/html/index.html
 
-# Dodany HEALTHCHECK sprawdzający, czy aplikacja działa
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -q --spider http://localhost || exit 1
+# Konfiguracja nginx jako reverse proxy
+COPY default.conf /etc/nginx/conf.d/default.conf
 
-2. Zbudowałam obraz Docker z przekazaną wersją:
-   docker build --build-arg VERSION="2.5.1" -t multistage-web .
+# Kopiuję statyczną binarkę aplikacji Go                  
+COPY app /usr/bin/app
 
-3. Uruchomiłam kontener:
-   docker run -d -p 8082:80 --name multistage-web multistage-web
+# HEALTHCHECK sprawdzający czy aplikacja działa
+HEALTHCHECK --interval=10s --timeout=3s CMD curl -f http:>
+# Uruchamiam aplikację Go w tle, a potem nginx
+CMD /usr/bin/app & nginx -g "daemon off;"
 
-4. Sprawdziłam działanie aplikacji za pomocą:
-   curl http://localhost:8082
-   lub w przeglądarce: http://localhost:8082
+3. Zbudowałam obraz:
+docker build -f Dockerfile -t go-scratch-nginx --build-arg VERSION=1.0.0 .
 
-Aplikacja wyświetliła:
-- IP serwera,
-- hostname,
-- wersję aplikacji: 2.5.1
+4. Uruchomiłam kontener:
+docker run -d -p 5000:80 --name go_nginx_server go-scratch-nginx
 
-Dzięki użyciu metody multi-stage build, mój obraz:
-- jest lekki,
-- zawiera tylko finalny wynik działania skryptu,
-- zawiera HEALTHCHECK monitorujący stan aplikacji.
+5. Sprawdziłam działanie:
+curl http://localhost:5000
+lub w przeglądarce: http://localhost:5000
 
-Wykorzystane dobre praktyki:
-- multi-stage build (oddzielenie build-time od runtime),
-- ARG do dynamicznego przekazania wersji aplikacji,
-- użycie lekkich obrazów `alpine` i `nginx:alpine`,
-- HEALTHCHECK do automatycznego monitorowania aplikacji.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Wnioski:
+
+Po wykonaniu polecenia 
+docker history go-scratch-nginx
+zauważyłam, że obraz zawiera ponad 20 warstw. Większość z nich pochodzi z obrazu bazowego nginx:alpine, który ma wbudowane własne konfiguracje, skrypty i zależności. Moje własne warstwy ograniczyły się jedynie do poleceń COPY, CMD i HEALTHCHECK, co oznacza, że nie wprowadziłam zbędnych dodatkowych warstw. Obraz pozostał optymalny i zgodny z dobrymi praktykami.
+
+polecenie docker zwróciło status healthy
+CONTAINER ID   IMAGE               COMMAND                  CREATED          STATUS                    PORTS                    NAMES
+12173138fe81   go-scratch-nginx    "/docker-entrypoint.…"   15 minutes ago   Up 15 minutes (healthy)   0.0.0.0:5000->80/tcp     go_nginx_server
+6a57fe69cf3e   go-scratch-alpine   "/usr/bin/app"           23 minutes ago   Up 23 minutes             0.0.0.0:8080->8080/tcp   go_app
+
